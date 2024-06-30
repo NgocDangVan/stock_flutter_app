@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:stock_app/repositories/user_repository.dart';
 import 'package:stock_app/screens/commons/utilities.dart';
+import 'package:stock_app/screens/home/home.dart';
 import 'package:stock_app/validators/EmailValidator.dart';
 import 'package:stock_app/validators/PasswordValidator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,7 +22,26 @@ class _LoginScreenState extends State<LoginScreen> {
     // Chắc chắn _formKey.currentState khác null nên để dấu !để không bị lỗi
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      showMessageDialog(context, 'Login successfully', MessageType.info);
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String email = _emailController.text;
+      String password = _passwordController.text;
+
+      try {
+        final token = await UserRepository.login(email, password);
+        if (token != null) {
+          await prefs.setString('token', token);
+          await prefs.setBool('isLogginIn', true);
+        } else {
+          print('Failed to login');
+        }
+      } catch (e) {
+        print('Error: $e');
+      }
+
+      if (context.mounted) {
+        Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => HomeScreen()));
+      }
     } else {
       showMessageDialog(context, 'Login failed', MessageType.error);
     }
